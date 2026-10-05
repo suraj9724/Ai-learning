@@ -1,0 +1,53 @@
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+*/venv/
+*/.venv/
+*/env/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Vector stores & temporary model/index caches
+*.faiss
+*.index
+vector_store/
+faiss_index/
+cache/
+.cache/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Unit test / coverage reports
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor & IDE directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
