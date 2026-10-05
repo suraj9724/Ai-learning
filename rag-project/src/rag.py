@@ -1,69 +1,37 @@
-from ingestion.pdf_loader import load_pdf
-from ingestion.chunker import chunk_text
-
 from embeddings.embedder import Embedder
 from retrieval.vector_store import VectorStore
-
 from generation.llm import LLM
-
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PDF_PATH = PROJECT_ROOT / "data" / "documents" / "rag_sample_knowledge_base.pdf"
+
+VECTOR_STORE_PATH = (
+    PROJECT_ROOT
+    / "data"
+    / "vector_store"
+)
 
 
 class RAG:
 
     def __init__(self):
 
-        print("Loading document...")
-
-        pages = load_pdf(PDF_PATH)
-
-        print("Creating chunks...")
-
-        self.chunks = chunk_text(
-            pages,
-            chunk_size=500,
-            chunk_overlap=100,
-            source=PDF_PATH.name,
-        )
-
-        print(
-            f"Created {len(self.chunks)} chunks."
-        )
-
         print("Loading embedding model...")
 
         self.embedder = Embedder()
 
-        texts = [
-            chunk["text"]
-            for chunk in self.chunks
-        ]
 
-        print("Generating embeddings...")
+        print("Loading vector store...")
 
-        embeddings = self.embedder.embed_texts(
-            texts
+        self.vector_store = VectorStore.load(
+            VECTOR_STORE_PATH
         )
 
-        print("Creating vector store...")
-
-        dimension = embeddings.shape[1]
-
-        self.vector_store = VectorStore(
-            dimension=dimension
-        )
-
-        self.vector_store.add(
-            embeddings,
-            self.chunks
-        )
 
         print("Loading LLM...")
 
         self.llm = LLM()
+
 
         print("RAG system ready!")
 
@@ -74,18 +42,20 @@ class RAG:
         top_k: int = 3,
     ):
 
-        # -----------------------------------------
-        # 1. Convert question into embedding
-        # -----------------------------------------
+        # -------------------------------
+        # 1. Embed question
+        # -------------------------------
 
-        query_embedding = self.embedder.embed_text(
-            question
+        query_embedding = (
+            self.embedder.embed_text(
+                question
+            )
         )
 
 
-        # -----------------------------------------
-        # 2. Retrieve relevant chunks
-        # -----------------------------------------
+        # -------------------------------
+        # 2. Retrieve chunks
+        # -------------------------------
 
         results = self.vector_store.search(
             query_embedding,
@@ -93,9 +63,9 @@ class RAG:
         )
 
 
-        # -----------------------------------------
+        # -------------------------------
         # 3. Build context
-        # -----------------------------------------
+        # -------------------------------
 
         context_parts = []
 
@@ -115,34 +85,41 @@ Content:
 """
             )
 
+
         context = "\n\n".join(
             context_parts
         )
 
-        # -----------------------------------------
+
+        # -------------------------------
         # 4. Generate answer
-        # -----------------------------------------
+        # -------------------------------
 
         answer = self.llm.generate(
             question=question,
             context=context,
         )
 
-        # -----------------------------------------
-        # 5. Return answer + sources
-        # -----------------------------------------
+
+        # -------------------------------
+        # 5. Build sources
+        # -------------------------------
 
         sources = []
 
         for result in results:
+
             chunk = result["chunk"]
 
             sources.append({
                 "chunk_id": chunk["chunk_id"],
                 "source": chunk["source"],
                 "page": chunk["page_number"],
-                "similarity": result["similarity"],
+                "similarity": result[
+                    "similarity"
+                ],
             })
+
 
         return {
             "question": question,
