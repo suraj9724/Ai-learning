@@ -1,88 +1,94 @@
+from pathlib import Path
+import hashlib
+
 from ingestion.pdf_loader import load_pdf
 from ingestion.chunker import chunk_text
-
 from embeddings.embedder import Embedder
 from retrieval.vector_store import VectorStore
 
-from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PDF_PATH = PROJECT_ROOT / "data" / "documents" / "rag_sample_knowledge_base.pdf"
+DOCUMENTS_PATH = PROJECT_ROOT / "data" / "documents"
 VECTOR_STORE_PATH = PROJECT_ROOT / "data" / "vector_store"
 
 
+
+def create_document_id(filename: str) -> str:
+    return hashlib.sha256(
+        filename.encode("utf-8")
+    ).hexdigest()[:12]
+
+
 def ingest():
+    pdf_files = sorted(DOCUMENTS_PATH.glob("*.pdf"))
 
-    print("Loading PDF...")
+    if not pdf_files:
+        raise FileNotFoundError(
+            f"No PDF files found in {DOCUMENTS_PATH}"
+        )
 
-    pages = load_pdf(
-        PDF_PATH
-    )
+    all_chunks = []
 
-    print(
-        f"Loaded {len(pages)} pages."
-    )
+    for pdf_path in pdf_files:
 
+        document_id = create_document_id(
+            pdf_path.name
+        )
 
-    print("Creating chunks...")
+        print("\n" + "=" * 60)
+        print(f"Processing: {pdf_path.name}")
+        print(f"Document ID: {document_id}")
+        print("=" * 60)
 
-    chunks = chunk_text(
-        pages,
-        chunk_size=500,
-        chunk_overlap=100,
-        source="rag_sample_knowledge_base.pdf",
-    )
+        pages = load_pdf(str(pdf_path))
 
-    print(
-        f"Created {len(chunks)} chunks."
-    )
+        chunks = chunk_text(
+            pages,
+            chunk_size=500,
+            chunk_overlap=100,
+            source=pdf_path.name,
+        )
 
+        # Add document identity to every chunk
+        for chunk in chunks:
+            chunk["document_id"] = document_id
+            chunk["document"] = pdf_path.name
 
-    print("Loading embedding model...")
+        print(f"Created {len(chunks)} chunks.")
+
+        all_chunks.extend(chunks)
+
+    print("\n" + "=" * 60)
+    print("INGESTION SUMMARY")
+    print("=" * 60)
+
+    print(f"Documents: {len(pdf_files)}")
+    print(f"Total chunks: {len(all_chunks)}")
 
     embedder = Embedder()
 
-
     texts = [
         chunk["text"]
-        for chunk in chunks
+        for chunk in all_chunks
     ]
 
+    embeddings = embedder.embed_texts(texts)
 
-    print("Generating embeddings...")
-
-    embeddings = embedder.embed_texts(
-        texts
-    )
-
-
-    print(
-        f"Embedding shape: {embeddings.shape}"
-    )
-
-
-    print("Building vector store...")
+    print(f"Embedding shape: {embeddings.shape}")
 
     vector_store = VectorStore(
         dimension=embeddings.shape[1]
     )
 
-
     vector_store.add(
         embeddings,
-        chunks,
+        all_chunks,
     )
 
-
-    print("Saving vector store...")
-
-    vector_store.save(
-        VECTOR_STORE_PATH
-    )
-
+    vector_store.save(VECTOR_STORE_PATH)
 
     print(
-        f"Vector store saved to: "
+        f"\nVector store saved to: "
         f"{VECTOR_STORE_PATH}"
     )
 

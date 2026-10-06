@@ -50,30 +50,26 @@ class VectorStore:
         query_embedding: np.ndarray,
         top_k: int = 3,
         similarity_threshold: float | None = None,
+        document_id: str | None = None,
     ):
-
         if self.index is None:
-            raise ValueError(
-                "Vector store has not been initialized."
-            )
+            raise ValueError("Vector store has not been initialized.")
 
         query_embedding = np.asarray(
             query_embedding,
             dtype="float32",
         )
 
-        query_embedding = query_embedding.reshape(
-            1,
-            -1,
-        )
+        query_embedding = query_embedding.reshape(1, -1)
 
-        faiss.normalize_L2(
-            query_embedding
-        )
+        faiss.normalize_L2(query_embedding)
+
+        # Search more candidates when filtering.
+        search_k = self.index.ntotal
 
         similarities, indices = self.index.search(
             query_embedding,
-            top_k,
+            search_k,
         )
 
         results = []
@@ -82,12 +78,19 @@ class VectorStore:
             similarities[0],
             indices[0],
         ):
-
             if index == -1:
                 continue
 
+            chunk = self.chunks[index]
+
+            # Document filter
+            if document_id is not None:
+                if chunk["document_id"] != document_id:
+                    continue
+
             similarity = float(similarity)
 
+            # Similarity threshold
             if (
                 similarity_threshold is not None
                 and similarity < similarity_threshold
@@ -95,9 +98,12 @@ class VectorStore:
                 continue
 
             results.append({
-                "chunk": self.chunks[index],
+                "chunk": chunk,
                 "similarity": similarity,
             })
+
+            if len(results) >= top_k:
+                break
 
         return results
 

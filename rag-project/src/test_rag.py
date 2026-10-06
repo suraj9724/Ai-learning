@@ -3,6 +3,8 @@ from rag import RAG
 
 rag = RAG()
 
+conversation = []
+
 
 while True:
 
@@ -13,12 +15,11 @@ while True:
     if question.lower() == "exit":
         break
 
-
     result = rag.ask(
         question,
         top_k=3,
+        conversation=conversation,
     )
-
 
     print("\n" + "=" * 80)
     print("ANSWER")
@@ -26,11 +27,9 @@ while True:
 
     print(result["answer"])
 
-
     print("\n" + "=" * 80)
     print("SOURCES")
     print("=" * 80)
-
 
     for source in result["sources"]:
 
@@ -47,5 +46,22 @@ while True:
         )
 
         print(
-            f"Similarity: {source['similarity']:.4f}"
+            f"Similarity: "
+            f"{source['similarity']:.4f}"
         )
+
+        if "rerank_score" in source and source["rerank_score"] is not None:
+            print(
+                f"Rerank: "
+                f"{source['rerank_score']:.4f}"
+            )
+
+    conversation.append({
+        "role": "user",
+        "content": question,
+    })
+
+    conversation.append({
+        "role": "assistant",
+        "content": result["answer"],
+    })
