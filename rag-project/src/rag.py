@@ -52,6 +52,10 @@ class RAG:
 
         self.query_rewriter = QueryRewriter()
 
+        print("Loading citation validator...")
+
+        self.citation_validator = CitationValidator()
+
         print("RAG system ready!")
 
 
