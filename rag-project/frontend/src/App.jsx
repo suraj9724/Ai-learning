@@ -64,19 +64,19 @@ function App() {
     const textToSend = questionText.trim();
     if (!textToSend || isLoading) return;
 
-    // 1. Immediately append user's question to the chat UI
+    // 1. Build prior conversation history for query rewriter in RAG (excluding errors)
+    const conversationHistory = messages
+      .filter((m) => !m.isError && (m.role === 'user' || m.role === 'assistant'))
+      .map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+    // 2. Immediately append user's question to the chat UI
     const newUserMessage = { role: 'user', content: textToSend };
-    const updatedMessages = [...messages, newUserMessage];
-    setMessages(updatedMessages);
+    setMessages((prev) => [...prev, newUserMessage]);
     setInput('');
     setIsLoading(true);
-
-    // 2. Build conversation history for query rewriter & context in RAG
-    // Only pass role and content to the backend
-    const conversationHistory = updatedMessages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
 
     try {
       // 3. Call FastAPI POST /api/ask

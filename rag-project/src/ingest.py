@@ -47,16 +47,17 @@ def ingest():
             chunk_size=500,
             chunk_overlap=100,
             source=pdf_path.name,
+            start_chunk_id=len(all_chunks),
         )
 
-        # Add document identity to every chunk
+        # Add document identity and ensure globally unique chunk_id across ingestion
         for chunk in chunks:
+            chunk["chunk_id"] = len(all_chunks)
             chunk["document_id"] = document_id
             chunk["document"] = pdf_path.name
+            all_chunks.append(chunk)
 
         print(f"Created {len(chunks)} chunks.")
-
-        all_chunks.extend(chunks)
 
     print("\n" + "=" * 60)
     print("INGESTION SUMMARY")

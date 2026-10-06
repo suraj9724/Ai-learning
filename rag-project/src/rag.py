@@ -110,7 +110,7 @@ class RAG:
         # -------------------------------
 
         results = self.reranker.rerank(
-            question,
+            search_query,
             candidate_results,
             top_k=top_k,
         )
@@ -127,12 +127,14 @@ class RAG:
 
             return {
                 "question": question,
+                "search_query": search_query,
                 "answer": (
                     "I couldn't find relevant information "
                     "in the knowledge base to answer that."
                 ),
-        "sources": [],
-    }
+                "sources": [],
+                "citation_validation": None,
+            }
 
         # -----------------------------------------
         # DEBUG: Inspect retrieval pipeline

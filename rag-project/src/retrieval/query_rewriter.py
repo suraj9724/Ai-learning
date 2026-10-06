@@ -74,4 +74,8 @@ Standalone search query:
             ],
         )
 
-        return response["message"]["content"].strip()
+        raw_query = response["message"]["content"].strip()
+        cleaned_query = raw_query.strip('"\'`')
+        if cleaned_query.lower().startswith("standalone search query:"):
+            cleaned_query = cleaned_query[len("standalone search query:"):].strip().strip('"\'`')
+        return cleaned_query or question

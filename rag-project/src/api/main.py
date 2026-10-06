@@ -70,9 +70,9 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     question: str
-    search_query: str
+    search_query: Optional[str] = None
     answer: str
-    sources: List[Dict[str, Any]]
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
     citation_validation: Optional[Dict[str, Any]] = None
 
 # ---------------------------------------------------------------------------

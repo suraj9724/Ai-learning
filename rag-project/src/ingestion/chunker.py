@@ -4,6 +4,7 @@ def chunk_text(
     chunk_overlap: int = 200,
     source: str = "unknown",
     section: str | None = None,
+    start_chunk_id: int = 0,
 ) -> list[dict]:
 
     if chunk_overlap >= chunk_size:
@@ -28,7 +29,7 @@ def chunk_text(
 
             if chunk:
                 chunks.append({
-                    "chunk_id": len(chunks),
+                    "chunk_id": start_chunk_id + len(chunks),
                     "document": source,
                     "page_number": page_number,
                     "section": section,
